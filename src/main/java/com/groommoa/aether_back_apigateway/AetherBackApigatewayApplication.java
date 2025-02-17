@@ -2,8 +2,10 @@ package com.groommoa.aether_back_apigateway;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.netflix.eureka.server.EnableEurekaServer;
 
 @SpringBootApplication
+@EnableEurekaServer
 public class AetherBackApigatewayApplication {
 
 	public static void main(String[] args) {
