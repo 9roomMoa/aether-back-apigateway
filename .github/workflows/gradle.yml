@@ -22,11 +22,11 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      # 2. application-secret.properties 생성
-      - name: Create application-secret.properties
+      # 2. application-cloud.properties 생성
+      - name: Create application-cloud.properties
         run: |
-          echo "spring.security.user.name=${{ secrets.SECURITY_USERNAME }}" > ./src/main/resources/application-secret.properties
-          echo "spring.security.user.password=${{ secrets.SECURITY_PASSWORD }}" >> ./src/main/resources/application-secret.properties
+          echo "eureka.client.service-url.defaultZone=http://${{ secrets.SECURITY_USERNAME }}:${{ secrets.SECURITY_PASSWORD }}@test.aether.asia:8761/eureka/" > ./src/main/resources/application-cloud.properties
+          echo "spring.cloud.gateway.routes[0].uri=http://test.aether.asia:8081/" >> ./src/main/resources/application-cloud.properties
 
       # 3. SpringBoot 애플리케이션 빌드
       - name: Build with Gradle
