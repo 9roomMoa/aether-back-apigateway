@@ -65,7 +65,7 @@ jobs:
 
       # 3. 최신 이미지를 컨테이너화하여 실행
       - name: Docker run new Container
-        run: sudo docker run --name aether-back-apigateway --rm -d -p 8761:8761 ${{ secrets.DOCKERHUB_USERNAME }}/aether-back-apigateway
+        run: sudo docker run --name aether-back-apigateway --rm -d -p 8081:8081 ${{ secrets.DOCKERHUB_USERNAME }}/aether-back-apigateway
 
       # 4. 미사용 이미지 정리
       - name: Delete old Docker Image
