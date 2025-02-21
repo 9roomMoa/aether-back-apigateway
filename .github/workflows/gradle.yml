@@ -29,7 +29,7 @@ jobs:
           echo "eureka.instance.instance-id=aether-back-apigateway:${{ secrets.SERVER_PORT }}" >> ./src/main/resources/application-cloud.properties
           echo "spring.cloud.gateway.routes[0].id=aether-back-auth" >> ./src/main/resources/application-cloud.properties
           echo "spring.cloud.gateway.routes[0].uri=lb://aether-back-auth" >> ./src/main/resources/application-cloud.properties
-          echo "spring.cloud.gateway.routes[0].predicates[0]=Path=/auth/**,/oauth2/**" >> ./src/main/resources/application-cloud.properties
+          echo "spring.cloud.gateway.routes[0].predicates[0]=Path=/auth/**,/oauth2/**,/login/**" >> ./src/main/resources/application-cloud.properties
 
       # 3. SpringBoot 애플리케이션 빌드
       - name: Build with Gradle
