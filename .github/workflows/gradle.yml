@@ -26,6 +26,7 @@ jobs:
       - name: Create application-cloud.properties
         run: |
           echo "eureka.client.service-url.defaultZone=${{ secrets.EUREKA_CLIENT_SERVICE_URL }}" > ./src/main/resources/application-cloud.properties
+          echo "eureka.instance.instance-id=${spring.application.name}:${spring.application.instance_id}:${server.port}" >> ./src/main/resources/application-cloud.properties
           echo "spring.cloud.gateway.routes[0].id=auth-service" >> ./src/main/resources/application-cloud.properties
           echo "spring.cloud.gateway.routes[0].uri=lb://auth-service" >> ./src/main/resources/application-cloud.properties
           echo "spring.cloud.gateway.routes[0].predicates[0]=Path=/auth/**,/oauth2/**" >> ./src/main/resources/application-cloud.properties
