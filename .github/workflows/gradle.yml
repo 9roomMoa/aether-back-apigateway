@@ -14,6 +14,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+        with:
+          submodules: true
+          token: ${{ secrets.GIT_TOKEN }}
 
       # 1. Java 21 세팅
       - name: Set up JDK 21
@@ -22,33 +25,37 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      # 2. application-cloud.properties 생성
-      - name: Create application-cloud.properties
-        run: |
-          echo "eureka.client.service-url.defaultZone=${{ secrets.EUREKA_CLIENT_SERVICE_URL }}" > ./src/main/resources/application-cloud.properties
-          echo "eureka.instance.instance-id=aether-back-apigateway:${{ secrets.SERVER_PORT }}" >> ./src/main/resources/application-cloud.properties
-          echo "spring.cloud.gateway.routes[0].id=aether-back-auth" >> ./src/main/resources/application-cloud.properties
-          echo "spring.cloud.gateway.routes[0].uri=lb://aether-back-auth" >> ./src/main/resources/application-cloud.properties
-          echo "spring.cloud.gateway.routes[0].predicates[0]=Path=/auth/**,/oauth2/**,/login/**" >> ./src/main/resources/application-cloud.properties
-
-      # 3. SpringBoot 애플리케이션 빌드
-      - name: Build with Gradle
-        uses: gradle/actions/setup-gradle@v3
+      # 2. gradle caching - 빌드 시간 향상
+      - name: Gradle Caching
+        uses: actions/cache@v3
         with:
-          arguments: clean bootJar
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
 
-      # 4. Docker 이미지 빌드
+      # 2. SpringBoot 애플리케이션 빌드
+      - name: Build with Gradle
+        run: |
+          chmod +x ./gradlew
+          ./gradlew clean bootJar
+
+      # 3. Docker 이미지 빌드
       - name: Docker Image Build
-        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/aether-back-apigateway .
+        run: |
+          docker build --cache-from=type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/aether-back-apigateway \
+          -t ${{ secrets.DOCKERHUB_USERNAME }}/aether-back-apigateway .
 
-      # 5. DockerHub 로그인
+      # 4. DockerHub 로그인
       - name: DockerHub Login
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      # 6. DockerHub 이미지 push
+      # 5. DockerHub 이미지 push
       - name: DockerHub push
         run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/aether-back-apigateway
 
@@ -62,14 +69,19 @@ jobs:
       - name: Docker pull
         run: sudo docker pull ${{ secrets.DOCKERHUB_USERNAME }}/aether-back-apigateway
 
-      # 2. 기존 컨테이너 중지
-      - name: Docker stop Container
-        run: sudo docker stop $(sudo docker ps -q) 2>/dev/null || true
+      # 2. 기존 컨테이너 중지 및 삭제
+      - name: Stop and Remove Existing Container
+        run: |
+          sudo docker stop aether-back-apigateway 2>/dev/null || true
+          sudo docker rm aether-back-apigateway 2>/dev/null || true
 
       # 3. 최신 이미지를 컨테이너화하여 실행
-      - name: Docker run new Container
-        run: sudo docker run --name aether-back-apigateway --rm -d -p 8081:8081 ${{ secrets.DOCKERHUB_USERNAME }}/aether-back-apigateway
+      - name: Run New Container
+        run: |
+          sudo docker run --name aether-back-apigateway --rm -d \
+          -p 8081:8081 -e SPRING_PROFILES_ACTIVE=apigateway \
+          --network host ${{ secrets.DOCKERHUB_USERNAME }}/aether-back-apigateway
 
       # 4. 미사용 이미지 정리
       - name: Delete old Docker Image
-        run: sudo docker system prune -f
+        run: sudo docker image prune -f
